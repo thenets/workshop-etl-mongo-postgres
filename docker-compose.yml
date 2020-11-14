@@ -1,0 +1,93 @@
+version: '3'
+
+services:
+  # Load balancer
+  traefik:
+    image: "traefik:v2.2"
+    container_name: "traefik"
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    networks:
+     - public
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  # Main application
+  app:
+    build: ./src
+    restart: unless-stopped
+    environment:
+      MONGO_URL: "root:blumehacked@mongo"
+    networks:
+     - public
+     - private
+    depends_on:
+      - mongo
+
+  postgres:
+    image: postgres:13.1
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: "blumehacked"
+    # ports:
+    #   - 5432:5432
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data"
+    networks:
+     - private
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "yourmom@blume.io"
+      POSTGRES_PASSWORD: "blumehacked"
+    ports:
+      - 8082:80
+    volumes:
+      - "pgadmin_data:/var/lib/pgadmin"
+    networks:
+     - private
+
+  mongo:
+    image: mongo:3.6
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: blumehacked
+    ports:
+      - 27017:27017
+    volumes:
+      - "mongo_data:/data/db"
+    networks:
+     - private
+  
+  mongo-express:
+    image: mongo-express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: blumehacked
+    ports:
+      - 8081:8081
+    volumes:
+      - "mongo_data:/data/db"
+    networks:
+     - private
+
+networks:
+  public:
+  private:
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  mongo_data:
