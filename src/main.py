@@ -13,7 +13,7 @@ if 'MONGO_URL' in os.environ:
 else:
     mongo = MongoClient()
 
-# %% Populate database if not exist
+# %% Populate Mongo database if not exist
 def pokeapi_get_pokemon_by_id(pokemon_id: int):
     url = f"https://pokeapi-cache.herokuapp.com/api/v2/pokemon/{pokemon_id}"
     r = requests.get(url)
@@ -60,11 +60,23 @@ if 'pokedex' not in database_names:
                 pokeapi_get_pokemon_by_id(i)
             )
 
-# %% Get PostgreSQL client
-# from sqlalchemy import event
-# from sqlalchemy.schema import CreateSchema
+# %% Get PostgreSQL engine
+from sqlalchemy import create_engine
+engine = create_engine("postgresql://%s:%s@%s:%s/%s" % (
+    os.environ['POSTGRESQL_USER'],
+    os.environ['POSTGRESQL_PASS'],
+    os.environ['POSTGRESQL_HOST'],
+    os.environ['POSTGRESQL_PORT'],
+    os.environ['POSTGRESQL_DB']
+))
 
-# event.listen(Base.metadata, 'before_create', CreateSchema('my_schema'))
+# %% Create schema
+from sqlalchemy import event
+from sqlalchemy.schema import CreateSchema
+try:
+    CreateSchema('pokedex').execute()
+except:
+    pass
 
 
 # # %%
@@ -77,3 +89,5 @@ if 'pokedex' not in database_names:
 
 # # %%
 # from sqlalchemy.types import Integer, Text, String, DateTime
+
+# %%
