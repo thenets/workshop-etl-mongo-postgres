@@ -22,7 +22,7 @@ services:
   # Main application
   app:
     build: ./src
-    restart: unless-stopped
+    restart: "no"
     environment:
       MONGO_URL: "root:blumehacked@mongo"
     networks:
@@ -37,8 +37,8 @@ services:
     environment:
       POSTGRES_PASSWORD: "blumehacked"
       POSTGRES_DB: "pokedex"
-    # ports:
-    #   - 5432:5432
+    ports:
+      - 5432:5432
     volumes:
       - "postgres_data:/var/lib/postgresql/data"
     networks:
