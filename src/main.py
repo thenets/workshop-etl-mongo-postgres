@@ -45,7 +45,7 @@ database_names = [x["name"] for x in mongo.list_databases()]
 
 if "pokedex" not in database_names:
     populate_async = True  # Param
-    pokedex_up_to = 220
+    pokedex_up_to = 40
 
     if populate_async:
         from multiprocessing import Pool, TimeoutError
@@ -65,6 +65,7 @@ if "pokedex" not in database_names:
         for i in range(pokedex_up_to + 1)[1:]:
             mongo_insert_pokemon(pokeapi_get_pokemon_by_id(i))
 
+
 # %% Create PostgreSQL tables
 from sqlalchemy import create_engine
 from sqlalchemy import MetaData
@@ -83,18 +84,44 @@ db_url = {
 }
 engine = create_engine(URL(**db_url))
 m = MetaData()
+
+db_table_name = "moves"
+
+# %%
 table = Table(
-    "Test",
+    db_table_name,
     m,
     Column("id", Integer, primary_key=True),
-    Column("key", String, nullable=True),
-    Column("val", String),
+    Column("name", String, nullable=False, unique=True),
+    Column("url", String, nullable=False),
 )
 
 table.create(engine)
 inspector = inspect(engine)
-print("Test" in inspector.get_table_names())
+print(db_table_name in inspector.get_table_names())
 
+# %%
+pokemon_list = [pokeapi_get_pokemon_by_id(25)]
+moves_list = []
+
+for pokemon in pokemon_list:
+    for move in pokemon["moves"]:
+        moves_list.append({"name": move["move"]["name"], "url": move["move"]["url"]})
+
+# %%
+import pandas as pd
+
+df = pd.DataFrame().from_dict(moves_list)
+df.head()
+
+df.to_sql(
+    name=db_table_name, schema="public", con=engine, if_exists="append", index=False
+)
+
+
+# %% Drop PostgreSQL database
 table.drop(engine)
 inspector = inspect(engine)
-print("Test" in inspector.get_table_names())
+print(db_table_name in inspector.get_table_names())
+
+# %%
